@@ -1,0 +1,15 @@
+site_name: miguelarbesu/nmrplot
+repo_name: miguelarbesu/nmrplot
+repo_url: https://github.com/miguelarbesu/nmrplot
+theme:
+  name: material
+  palette:
+    primary: blue grey
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+plugins:
+  - search
+  - mkdocstrings

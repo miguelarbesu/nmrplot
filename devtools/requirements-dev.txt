@@ -1,0 +1,17 @@
+# Requirements file to create a dev virtual environment
+# Includes libs for CI, testing, linting
+# Add libraries and specific versions here as needed
+# See here for more advanced usage https://caremad.io/posts/2013/07/setup-vs-requirement/
+pip
+virtualenv
+pytest
+setuptools
+# Extras
+versioneer
+commitizen
+pre-commit
+isort
+black
+flake8
+mkdocs-material
+mkdocstrings
