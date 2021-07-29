@@ -34,11 +34,7 @@ setup(
     package_dir={"": "src"},
     py_modules=[splitext(basename(i))[0] for i in glob("src/*.py")],
     include_package_data=True,
-    entry_points={
-        "console_scripts": [
-            "nmrplot = nmrplot.__main__:main"
-        ]
-    },
+    entry_points={"console_scripts": ["nmrplot = nmrplot.__main__:main"]},
     license="MIT",
     setup_requires=[] + pytest_runner,
     install_requires=[

@@ -109,3 +109,6 @@ ipython_config.py
 
 # exclude external models from source control
 /src/external/
+
+# exclude VS Code files
+.vscode/
