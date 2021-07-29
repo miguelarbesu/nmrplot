@@ -55,9 +55,7 @@ Google-style
 
 ## Recommended working set up
 
-An [IDE](https://en.wikipedia.org/wiki/Integrated_development_environment) is a handy way of automatizing processes. 
-
-CONTINUE
+An [IDE](https://en.wikipedia.org/wiki/Integrated_development_environment) is a handy way of automatizing processes. I reccomend [VS code](https://code.visualstudio.com/).
 
 ## Optional setup for devs
 
