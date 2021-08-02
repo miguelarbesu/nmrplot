@@ -112,3 +112,6 @@ ipython_config.py
 
 # exclude VS Code files
 .vscode/
+
+# exclude local mkdocs files
+site/
