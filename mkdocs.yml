@@ -12,4 +12,6 @@ theme:
     - navigation.tabs.sticky
 plugins:
   - search
-  - mkdocstrings
+  - mkdocstrings:
+      watch:
+        - src/nmrplot
