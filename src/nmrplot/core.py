@@ -9,8 +9,21 @@ from os import path
 import matplotlib.pyplot as plt
 import nmrglue as ng
 import numpy as np
+from matplotlib import cm
 from skimage.exposure.exposure import histogram
 from sklearn.preprocessing import RobustScaler
+
+cmapdict = {
+    "red": plt.cm.Reds_r,
+    "blue": plt.cm.Blues_r,
+    "green": plt.cm.Greens_r,
+    "purple": plt.cm.Purples_r,
+    "orange": plt.cm.Oranges_r,
+    "grey": plt.cm.Greys_r,
+    "light_red": plt.cm.YlOrRd_r,
+    "light_blue": plt.cm.GnBu_r,
+    "viridis": plt.cm.viridis,
+}
 
 
 def load_bruker(expno_path, pdata=1):
@@ -51,6 +64,8 @@ class Spectrum:
         for i in range(self.ndim):
             converter = ng.fileiobase.uc_from_udic(self.udic, dim=i)
             self.ppm_ranges.append(converter.ppm_limits())
+        # reverse the order of the ppm_ranges so it matches the dimensions
+        self.ppm_ranges = self.ppm_ranges[::-1]
         # flatten the list
         self.ppm_ranges = [item for sublist in self.ppm_ranges for item in sublist]
         return self.ppm_ranges
@@ -79,7 +94,7 @@ class Spectrum:
         self.snr = self.signal / self.noise
         return self.snr, self.signal, self.noise
 
-    def calc_clevs(self, threshold=1, nlevs=42, factor=1.1):
+    def calc_clevs(self, threshold=0.1, nlevs=42, factor=1.1):
         """Return the contour levels for plotting"""
         startlev = threshold * self.noise
         self.clevs = startlev * factor ** np.arange(nlevs)
@@ -91,26 +106,35 @@ class Spectrum:
         plt.hist(bins, counts)
         plt.show()
 
-    def plot_spectrum(self, threshold=1, nlevs=42, factor=1.1):
+    def plot_spectrum(self, threshold=0.1, nlevs=42, factor=1.1, cmap="viridis"):
         """Plot the spectrum"""
         if self.ndim == 1:
             fig, ax = plt.subplots()
             ppm_scale = np.linspace(
                 self.ppm_ranges[0], self.ppm_ranges[1], self.data.size
             )
-            ax.plot(ppm_scale, self.data)
-            # reverse x axis
+            ax.plot(ppm_scale, self.data, linewidth=1.0)
             ax.set_xlim(*self.ppm_ranges)
             ax.set_xlabel(f"{self.dimensions[0]} ppm")
             ax.set_ylabel("Intensity (A.U.)")
+            plt.show()
 
         elif self.ndim == 2:
             self.calc_clevs(threshold, nlevs, factor)
             fig, ax = plt.subplots()
-            ax.contour(self.data, self.clevs, extent=self.ppm_ranges)
+            ax.contour(
+                self.data,
+                self.clevs,
+                extent=self.ppm_ranges,
+                linewidths=0.5,
+                cmap=cmapdict[cmap],
+                vmin=self.clevs.min() * 1.2,
+                vmax=self.clevs.max() * 0.8,
+            )
             ax.set_xlim(*self.ppm_ranges[:2])
             ax.set_ylim(*self.ppm_ranges[2:])
             ax.set_xlabel(f"{self.dimensions[0]} ppm")
             ax.set_ylabel(f"{self.dimensions[1]} ppm")
+            plt.show()
         else:
             print("The spectrum is not 1D or 2D")
