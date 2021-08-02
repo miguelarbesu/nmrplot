@@ -10,9 +10,9 @@
 
 ---
 
-A Python tool for plotting NMR spectra
+A Python tool for plotting NMR spectra using [`nmrglue`](https://nmrglue.readthedocs.io/en/latest/).
 
-Full documentation at https:miguelarbesu.github.io/nmrplot
+Full documentation at [this website](https://miguelarbesu.github.io/nmrplot/).
 
 ## Installation
 
@@ -48,6 +48,9 @@ object that holds data and spectral parameters for easy access.
 Copyright (c) 2021, Miguel Arbesú
 
 ## Acknowledgements
+
+This module is a wrapper around `nmrglue`. If you use `nmrplot`, you must acknowledge
+`nmrglue` too.
  
 Project based on the [Reproducible Science Cookiecutter](https://github.com/miguelarbesu/cookiecutter-reproducible-science).
 
