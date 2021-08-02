@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 (2021-08-02)
+
+### Feat
+
+- enable basic plotting from cli
+
 ## 0.2.0 (2021-07-30)
 
 ### Feat

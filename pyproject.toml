@@ -1,5 +1,5 @@
 [tool.commitizen]
-version = "0.2.0"
+version = "0.3.0"
 version_files = ["src/nmrplot/_version.py"]
 changelog_file = "docs/changelog.md"
 update_changelog_on_bump = true
