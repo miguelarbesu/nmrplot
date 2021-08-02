@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""A module template
+"""The core module of nmrplot.
+Contains the Spectrum class, which is the main class of nmrplot, and a number of extras.
 """
 from locale import normalize
 from math import prod
@@ -27,15 +28,17 @@ cmapdict = {
 
 
 def load_bruker(expno_path, pdata=1):
-    """Load a processed spectrum in Bruker format
+    """Load a processed spectrum in Bruker format and return data and spectral parameters.
 
-    Arguments:
-        expno_path {str} -- Path to experiment folder (i.e. to experiment_name/expno)
-        pdata {int} -- Number of proccessing (default: {1})
+    Args:
+        expno_path (str): Path to experiment folder (i.e. to experiment_name/expno)
+        pdata (int, optional): Number of proccessing. Defaults to 1.
+
     Returns:
-        udic {dic} -- Universal dictionary of NMR parameters.
-        data {np.ndarray} -- Signal intensities in a.u.
+        dic (dic): Dictionary of Bruker NMR parameters.
+        data (np.ndarray): Processed NMR spectum as an array of intensities.
     """
+
     pdata_path = path.join(expno_path, f"pdata/{pdata}")
     dic, data = ng.bruker.read_pdata(pdata_path)
 
@@ -43,6 +46,8 @@ def load_bruker(expno_path, pdata=1):
 
 
 class Spectrum:
+    """An object contiaining a spectrum and its parameters"""
+
     def __init__(self, expno_path, pdata=1, normalize=True):
         self.dic, self.data = load_bruker(expno_path, pdata)
         self.udic = ng.bruker.guess_udic(self.dic, self.data)
@@ -95,7 +100,17 @@ class Spectrum:
         return self.snr, self.signal, self.noise
 
     def calc_clevs(self, threshold=0.1, nlevs=42, factor=1.1):
-        """Return the contour levels for plotting"""
+        """Return the contour levels for plotting
+
+        Args:
+            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise. Defaults to 0.1.
+            nlevs (int, optional): Number of contour levels. Defaults to 42.
+            factor (float, optional): exponential increment between contours. Defaults to 1.1.
+
+        Returns:
+            self.clevs (np.array): An array of intensities.
+        """
+        """"""
         startlev = threshold * self.noise
         self.clevs = startlev * factor ** np.arange(nlevs)
         return self.clevs
@@ -107,7 +122,16 @@ class Spectrum:
         plt.show()
 
     def plot_spectrum(self, threshold=0.1, nlevs=42, factor=1.1, cmap="viridis"):
-        """Plot the spectrum"""
+        """Plot the spectrum
+
+        Args:
+            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise. Defaults to 0.1.
+            nlevs (int, optional): Number of contour levels. Defaults to 42.
+            factor (float, optional): exponential increment between contours. Defaults to 1.1.
+            cmap (str, optional): Colormap to be used. Defaults to "viridis". Other options are: "red", "blue", "green", "purple", "orange", "grey", "light_red", "light_blue".
+        """
+        # print cmpdict.keys as a comment
+
         if self.ndim == 1:
             fig, ax = plt.subplots()
             ppm_scale = np.linspace(
