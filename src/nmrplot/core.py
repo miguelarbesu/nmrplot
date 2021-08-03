@@ -15,6 +15,7 @@ from skimage.exposure.exposure import histogram
 from sklearn.preprocessing import RobustScaler
 
 cmapdict = {
+    # sequential colormaps for only positive values
     "red": plt.cm.Reds_r,
     "blue": plt.cm.Blues_r,
     "green": plt.cm.Greens_r,
@@ -24,6 +25,9 @@ cmapdict = {
     "light_red": plt.cm.YlOrRd_r,
     "light_blue": plt.cm.GnBu_r,
     "viridis": plt.cm.viridis,
+    # diverging colormaps for positive/negative values
+    "coolwarm": plt.cm.coolwarm,
+    "earth": plt.cm.gist_earth,
 }
 
 
@@ -93,25 +97,39 @@ class Spectrum:
         self.normalized = True
 
     def calc_signal_to_noise(self):
-        """Return the signal to noise ratio of the spectrum"""
-        self.signal = self.data.sum()
-        self.noise = self.data.var()
+        """Return the signal to noise ratio of the spectrum
+        Based on SNR definition by Hyberts et al. (2013)
+        https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3570699/
+        """
+        # define signal as the maximum intensity in the spectrum
+        self.signal = self.data.max()
+        # define an empty region as the lowest decile of the spectrum
+        empty = self.data[self.data < np.quantile(self.data, 0.1)]
+        # define the noise as the standard deviation of the empty region
+        self.noise = empty.std()
+        # calculate the signal to noise ratio
         self.snr = self.signal / self.noise
         return self.snr, self.signal, self.noise
 
-    def calc_clevs(self, threshold=0.1, nlevs=42, factor=1.1):
+    def calc_clevs(self, threshold, nlevs, factor):
         """Return the contour levels for plotting
 
         Args:
-            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise. Defaults to 0.1.
-            nlevs (int, optional): Number of contour levels. Defaults to 42.
-            factor (float, optional): exponential increment between contours. Defaults to 1.1.
+            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise.
+            nlevs (int, optional): Number of contour levels.
+            factor (float, optional): exponential increment between contours.
 
         Returns:
             self.clevs (np.array): An array of intensities.
         """
-        """"""
-        startlev = threshold * self.noise
+        if threshold is None:
+            # A good guess is the lowest contour should be 1/100 of the maximum intensity
+            startlev = self.baseline + self.signal * 0.01
+            # Calculate the corresponding threshold
+            threshold = (self.signal * 0.01) / self.noise
+        else:
+            startlev = self.baseline + (threshold * self.noise)
+        print(f"Lowest contour level is at {threshold:.1f}*noise above the baseline")
         self.clevs = startlev * factor ** np.arange(nlevs)
         return self.clevs
 
@@ -121,16 +139,16 @@ class Spectrum:
         plt.hist(bins, counts)
         plt.show()
 
-    def plot_spectrum(self, threshold=0.1, nlevs=42, factor=1.1, cmap="viridis"):
-        """Plot the spectrum
+    def plot_spectrum(self, threshold, nlevs=42, factor=1.1, cmap="viridis"):
+        """Plot the spectrum.
+        WARNING: Only shows the positive values.
 
         Args:
-            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise. Defaults to 0.1.
-            nlevs (int, optional): Number of contour levels. Defaults to 42.
-            factor (float, optional): exponential increment between contours. Defaults to 1.1.
-            cmap (str, optional): Colormap to be used. Defaults to "viridis". Other options are: "red", "blue", "green", "purple", "orange", "grey", "light_red", "light_blue".
+            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise.
+            nlevs (int, optional): Number of contour levels.
+            factor (float, optional): exponential increment between contours.
+            cmap (str, optional): Colormap to be used. Other options are: "red", "blue", "green", "purple", "orange", "grey", "light_red", "light_blue", "coolwarm", "gist_earth".
         """
-        # print cmpdict.keys as a comment
 
         if self.ndim == 1:
             fig, ax = plt.subplots()
@@ -152,6 +170,8 @@ class Spectrum:
                 extent=self.ppm_ranges,
                 linewidths=0.5,
                 cmap=cmapdict[cmap],
+                # cut down the extremes of the color scale
+                # the dynamic range is very large, otherwise extremes are too dark/light
                 vmin=self.clevs.min() * 1.2,
                 vmax=self.clevs.max() * 0.8,
             )
