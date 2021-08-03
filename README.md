@@ -23,7 +23,6 @@ Full documentation at [this website](https://miguelarbesu.github.io/nmrplot/).
 python -m pip install git+https://github.com/miguelarbesu/nmrplot
 ```
 or
-
 - Download (and uncompress), clone, or fork this repository in your computer.
 - Open a command line terminal and go into the repository folder.
 - Run `python setup.py install` or `python -m pip install -e .` for an editable installation (see [the developers README](devtools/README-dev.md)).
@@ -37,7 +36,6 @@ You can call `nmrplot` for basic plotting 1D or 2D spectra from the command line
 ```bash
 nmrplot [OPTIONS] PATH
 ```
-
 where PATH is the path to a particular Bruker NMR experiment number. Use the `--help` flag to see the possible options.
 
 ## Advanced usage
@@ -54,8 +52,8 @@ Copyright (c) 2021, Miguel Arbesú
 
 ## Acknowledgements
 
-This module is a wrapper around `nmrglue`. If you use `nmrplot`, you must acknowledge
-(and cite) `nmrglue` too.
+This module is a wrapper around  [`nmrglue`](https://nmrglue.readthedocs.io/en/latest/). If you use `nmrplot`, you must acknowledge
+([and cite](https://link.springer.com/article/10.1007/s10858-013-9718-x)) `nmrglue` too.
  
 Project based on the [Reproducible Science Cookiecutter](https://github.com/miguelarbesu/cookiecutter-reproducible-science).
 
