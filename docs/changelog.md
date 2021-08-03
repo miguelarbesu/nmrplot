@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 (2021-08-03)
+
+### Feat
+
+- improve snr and contour level estimation
+
 ## 0.3.0 (2021-08-02)
 
 ### Feat
