@@ -41,12 +41,9 @@ setup(
         # Basic libs
         "matplotlib>3",
         "pandas>1",
-        "jupyter",
-        # Extra - uncomment to use or add more
-        # "scikit-learn",
-        # "skimage",
-        # "seaborn",
-        # "pymc3"
+        "scikit-learn",
+        "skimage",
+        "nmrglue",
     ],
     python_requires=">=3.6",
 )
