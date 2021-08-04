@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 (2021-08-04)
+
+### Fix
+
+- **core.py**: reverse all loops through dimensions
+
 ## 0.4.0 (2021-08-03)
 
 ### Feat
