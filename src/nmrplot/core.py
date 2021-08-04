@@ -57,10 +57,12 @@ class Spectrum:
         self.udic = ng.bruker.guess_udic(self.dic, self.data)
         self.ndim = self.data.ndim
         self.normalized = False
-        self.dimensions = tuple(self.udic[i]["label"] for i in range(self.ndim))
-        self.sw = tuple(self.udic[i]["sw"] for i in range(self.ndim))
-        self.obs = tuple(self.udic[i]["obs"] for i in range(self.ndim))
-        self.freq = tuple(self.udic[i]["freq"] for i in range(self.ndim))
+        # go through each dimension inversely to keep the right order.
+        # last dimension is the directly detected, goes to X axis
+        self.label = tuple(self.udic[i]["label"] for i in reversed(range(self.ndim)))
+        self.sw = tuple(self.udic[i]["sw"] for i in reversed(range(self.ndim)))
+        self.obs = tuple(self.udic[i]["obs"] for i in reversed(range(self.ndim)))
+        self.freq = tuple(self.udic[i]["freq"] for i in reversed(range(self.ndim)))
         self.get_ppm_ranges()
         self.calc_baseline()
         if normalize:
@@ -70,12 +72,11 @@ class Spectrum:
     def get_ppm_ranges(self):
         """Return the ppm ranges of the spectrum"""
         self.ppm_ranges = []
-        for i in range(self.ndim):
+        # go through each dimension inversely to keep the right order.
+        for i in reversed(range(self.ndim)):
             converter = ng.fileiobase.uc_from_udic(self.udic, dim=i)
             self.ppm_ranges.append(converter.ppm_limits())
-        # reverse the order of the ppm_ranges so it matches the dimensions
-        self.ppm_ranges = self.ppm_ranges[::-1]
-        # flatten the list
+        # flatten the range list
         self.ppm_ranges = [item for sublist in self.ppm_ranges for item in sublist]
         return self.ppm_ranges
 
@@ -157,7 +158,7 @@ class Spectrum:
             )
             ax.plot(ppm_scale, self.data, linewidth=1.0)
             ax.set_xlim(*self.ppm_ranges)
-            ax.set_xlabel(f"{self.dimensions[0]} ppm")
+            ax.set_xlabel(f"{self.label[0]} ppm")
             ax.set_ylabel("Intensity (A.U.)")
             plt.show()
 
@@ -177,8 +178,8 @@ class Spectrum:
             )
             ax.set_xlim(*self.ppm_ranges[:2])
             ax.set_ylim(*self.ppm_ranges[2:])
-            ax.set_xlabel(f"{self.dimensions[0]} ppm")
-            ax.set_ylabel(f"{self.dimensions[1]} ppm")
+            ax.set_xlabel(f"{self.label[0]} ppm")
+            ax.set_ylabel(f"{self.label[1]} ppm")
             plt.show()
         else:
             print("The spectrum is not 1D or 2D")

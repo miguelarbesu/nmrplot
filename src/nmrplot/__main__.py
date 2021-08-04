@@ -13,7 +13,7 @@ from nmrplot import core
 def main(path, threshold, cmap, nlevs):
     """Plot a 1D or 2D NMR spectrum"""
     spectrum = core.Spectrum(path)
-    print(f"Loaded {spectrum.ndim}D spectrum {spectrum.dimensions}")
+    print(f"Loaded {spectrum.ndim}D spectrum {spectrum.label}")
     spectrum.plot_spectrum(threshold=threshold, cmap=cmap, nlevs=nlevs)
 
 
