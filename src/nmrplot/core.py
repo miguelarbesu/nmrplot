@@ -50,7 +50,7 @@ def load_bruker(expno_path, pdata=1):
 
 
 class Spectrum:
-    """An object contiaining a spectrum and its parameters"""
+    """An object containing a spectrum and its parameters"""
 
     def __init__(self, expno_path, pdata=1, normalize=True):
         self.dic, self.data = load_bruker(expno_path, pdata)
@@ -65,6 +65,7 @@ class Spectrum:
         self.freq = tuple(self.udic[i]["freq"] for i in reversed(range(self.ndim)))
         self.get_ppm_ranges()
         self.calc_baseline()
+        # data is normalized by default
         if normalize:
             self.normalize_data()
         self.calc_signal_to_noise()
