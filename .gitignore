@@ -115,3 +115,6 @@ ipython_config.py
 
 # exclude local mkdocs files
 site/
+
+# exclude src/data for now
+/src/data/
