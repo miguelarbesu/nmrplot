@@ -3,8 +3,6 @@
 """The core module of nmrplot.
 Contains the Spectrum class, which is the main class of nmrplot, and a number of extras.
 """
-from locale import normalize
-from math import prod
 from os import path
 
 import matplotlib.pyplot as plt
@@ -66,7 +64,7 @@ class Spectrum:
         self.get_ppm_ranges()
         self.calc_baseline()
         # data is normalized by default
-        if normalize:
+        if normalize is True:
             self.normalize_data()
         self.calc_signal_to_noise()
 
