@@ -117,7 +117,7 @@ class Spectrum:
         signal fraction
 
         Args:
-            sign (str, optional): Sign of the intensities to draw. Defaults to 'both'.
+            sign (str, optional): Sign of the intensities to draw.
             signal_fraction (float, optional): Fraction of the maximum intensity as lower contour. Defaults to 0.01.
 
         Raises:
