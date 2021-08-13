@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 (2021-08-13)
+
+### Feat
+
+- **core.py**: add plotting of positive, negative or both signals
+
 ## 0.4.1 (2021-08-04)
 
 ### Fix
