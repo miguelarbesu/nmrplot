@@ -8,9 +8,8 @@ from os import path
 import matplotlib.pyplot as plt
 import nmrglue as ng
 import numpy as np
-from matplotlib import cm
+from matplotlib.colors import LogNorm, SymLogNorm
 from skimage.exposure.exposure import histogram
-from sklearn.preprocessing import RobustScaler
 
 cmapdict = {
     # sequential colormaps for only positive values
@@ -101,9 +100,11 @@ class Spectrum:
         Based on SNR definition by Hyberts et al. (2013)
         https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3570699/
         """
-        # define signal as the maximum intensity in the spectrum
-        self.signal = self.data.max()
+        # define signal as the maximum intensity in the spectrum (positive or negative)
+        self.signal = abs(self.data).max()
         # define an empty region as the lowest decile of the spectrum
+        # FIXME: Review this definition for spectra with negative peaks
+        # E.g. NOESY
         empty = self.data[self.data < np.quantile(self.data, 0.1)]
         # define the noise as the standard deviation of the empty region
         self.noise = empty.std()
@@ -111,27 +112,75 @@ class Spectrum:
         self.snr = self.signal / self.noise
         return self.snr, self.signal, self.noise
 
-    def calc_clevs(self, threshold, nlevs, factor):
-        """Return the contour levels for plotting
+    def calc_threshold(self, sign, signal_fraction=0.01):
+        """Return the threshold for the spectrum contour level based on a given
+        signal fraction
 
         Args:
-            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise.
-            nlevs (int, optional): Number of contour levels.
-            factor (float, optional): exponential increment between contours.
+            sign (str, optional): Sign of the intensities to draw. Defaults to 'both'.
+            signal_fraction (float, optional): Fraction of the maximum intensity as lower contour. Defaults to 0.01.
+
+        Raises:
+            ValueError: Error message if no correct sign is given.
 
         Returns:
-            self.clevs (np.array): An array of intensities.
+            self.threshold: How many times the noise level is the lower contour above the baseline.
+        """
+        if sign == "both":
+            # A good guess is the lowest contour should be 1/100 of the signal
+            # Calculate the corresponding threshold
+            self.threshold = (self.signal * signal_fraction) / self.noise
+        elif sign == "positive":
+            # Same but on the positive side
+            self.threshold = (self.data.max() * signal_fraction) / self.noise
+        elif sign == "negative":
+            # Same but on the negative side
+            self.threshold = abs(self.data.min() * signal_fraction) / self.noise
+        else:
+            raise ValueError(
+                f"Unknown sign: {sign}\nPlease choose a valid sign: negative, positive or both"
+            )
+        return self.threshold
+
+    def calc_clevs(self, threshold, nlevs, factor, sign):
+        """Calculate the contour levels for the spectrum given a series of parameters.
+
+        Args:
+            threshold (float): How many times the noise level is the lower contour above the baseline.
+            nlevs (int): How many contour levels to use.
+            factor (float): Exponential factor between the contour levels.
+            sign (string): Sign of the signals to use. Can be 'positive', 'negative' or 'both'.
+
+        Raises:
+            ValueError: If no correct sign is given, an error message is raised.
         """
         if threshold is None:
-            # A good guess is the lowest contour should be 1/100 of the maximum intensity
-            startlev = self.baseline + self.signal * 0.01
-            # Calculate the corresponding threshold
-            threshold = (self.signal * 0.01) / self.noise
+            self.calc_threshold(sign)
         else:
-            startlev = self.baseline + (threshold * self.noise)
-        print(f"Lowest contour level is at {threshold:.1f}*noise above the baseline")
-        self.clevs = startlev * factor ** np.arange(nlevs)
-        return self.clevs
+            self.threshold = threshold
+        # calculate starting contour level from threshold
+        start_clev = self.baseline + self.threshold * self.noise
+        if sign == "both":
+            positive_clevs = start_clev * factor ** np.arange(nlevs)
+            negative_clevs = -np.flip(positive_clevs)
+            self.clevs = np.concatenate((negative_clevs, positive_clevs))
+            print(
+                f"Highest negative/lowest positive contour levels are at {self.threshold:.1f}*noise below/above the baseline"
+            )
+        elif sign == "positive":
+            self.clevs = start_clev * factor ** np.arange(nlevs)
+            print(
+                f"Lowest positive contour level is at {self.threshold:.1f}*noise above the baseline"
+            )
+        elif sign == "negative":
+            self.clevs = -np.flip(start_clev * factor ** np.arange(nlevs))
+            print(
+                f"Highest negative contour level is at {self.threshold:.1f}*noise below the baseline"
+            )
+        else:
+            raise ValueError(
+                f"Unknown sign: {sign}\nPlease choose a valid sign: negative, positive or both"
+            )
 
     def plot_histogram(self):
         """Plot the histogram of the spectrum"""
@@ -139,15 +188,16 @@ class Spectrum:
         plt.hist(bins, counts)
         plt.show()
 
-    def plot_spectrum(self, threshold, nlevs=42, factor=1.1, cmap="viridis"):
+    def plot_spectrum(
+        self, threshold, nlevs=42, factor=1.1, cmap="viridis", sign="positive"
+    ):
         """Plot the spectrum.
-        WARNING: Only shows the positive values.
-
         Args:
-            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise.
-            nlevs (int, optional): Number of contour levels.
-            factor (float, optional): exponential increment between contours.
-            cmap (str, optional): Colormap to be used. Other options are: "red", "blue", "green", "purple", "orange", "grey", "light_red", "light_blue", "coolwarm", "gist_earth".
+           threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise.
+           nlevs (int, optional): Number of contour levels.
+           factor (float, optional): exponential increment between contours.
+           cmap (str, optional): Colormap to be used. Other options are: "red", "blue", "green", "purple", "orange", "grey", "light_red", "light_blue". Only with sign="both":"coolwarm", "gist_earth".
+           sign (str, optional): Sign of the intensities to draw. Defaults to 'positive'.
         """
 
         if self.ndim == 1:
@@ -162,18 +212,45 @@ class Spectrum:
             plt.show()
 
         elif self.ndim == 2:
-            self.calc_clevs(threshold, nlevs, factor)
+            self.calc_clevs(threshold, nlevs, factor, sign)
             fig, ax = plt.subplots()
+            # Set the limits of the color map to the calculated contour levels
+            vmin = self.clevs.min()
+            vmax = self.clevs.max()
+            # Colormaps need to be lognormalized to fit the contour levels
+            if sign == "both":
+                cmap = cmapdict["coolwarm"]
+                # We have positive and negative contours
+                norm = SymLogNorm(
+                    linthresh=self.threshold * self.noise, vmin=vmin, vmax=vmax, base=10
+                )
+                data = norm(self.data)
+                clevs = norm(self.clevs)
+                print(f"Plotting {nlevs} negative and {nlevs} positive contour levels")
+            elif sign == "positive":
+                norm = LogNorm(vmin=vmin, vmax=vmax)
+                cmap = cmapdict[cmap]
+                data = norm(self.data)
+                clevs = norm(self.clevs)
+                print(f"Plotting {nlevs} positive contour levels")
+            elif sign == "negative":
+                # Because contours are negative we need to make it positive to calculate
+                # the norm, and apply it flipped to the data and clevs
+                # FIXME: It raises a RuntimeWarning, but it works.
+                # Also, it is not very efficient to make copies of the data and clevs
+                norm = LogNorm(vmin=abs(vmax), vmax=abs(vmin))
+                cmap = cmapdict[cmap]
+                data = norm.inverse(self.data)
+                clevs = norm.inverse(self.clevs)
+                print(f"Plotting {nlevs} negative contour levels")
+            else:
+                pass
             ax.contour(
-                self.data,
-                self.clevs,
+                data,
+                clevs,
                 extent=self.ppm_ranges,
-                linewidths=0.5,
-                cmap=cmapdict[cmap],
-                # cut down the extremes of the color scale
-                # the dynamic range is very large, otherwise extremes are too dark/light
-                vmin=self.clevs.min() * 1.2,
-                vmax=self.clevs.max() * 0.8,
+                linewidths=0.75,
+                cmap=cmap,
             )
             ax.set_xlim(*self.ppm_ranges[:2])
             ax.set_ylim(*self.ppm_ranges[2:])
