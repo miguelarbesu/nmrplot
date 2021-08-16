@@ -24,7 +24,7 @@ cmapdict = {
     "viridis": plt.cm.viridis,
     # diverging colormaps for positive/negative values
     "coolwarm": plt.cm.coolwarm,
-    "earth": plt.cm.gist_earth,
+    # "earth": plt.cm.gist_earth,
 }
 
 
@@ -148,7 +148,7 @@ class Spectrum:
         Args:
             threshold (float): How many times the noise level is the lower contour above the baseline.
             nlevs (int): How many contour levels to use.
-            factor (float): Exponential factor between the contour levels.
+            factor (float): Increment factor between the contour levels.
             sign (string): Sign of the signals to use. Can be 'positive', 'negative' or 'both'.
 
         Raises:
@@ -196,7 +196,7 @@ class Spectrum:
            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise.
            nlevs (int, optional): Number of contour levels.
            factor (float, optional): exponential increment between contours.
-           cmap (str, optional): Colormap to be used. Other options are: "red", "blue", "green", "purple", "orange", "grey", "light_red", "light_blue". Only with sign="both":"coolwarm", "gist_earth".
+           cmap (str, optional): Colormap to be used. Options are: "viridis, "red", "blue", "green", "purple", "orange", "grey", "light_red", "light_blue". Only with sign="both":"coolwarm".
            sign (str, optional): Sign of the intensities to draw. Defaults to 'positive'.
         """
 
