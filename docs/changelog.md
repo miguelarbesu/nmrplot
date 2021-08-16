@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1 (2021-08-16)
+
+### Refactor
+
+- **__main__.py**: enable factor arg from cli and add help messages
+
 ## 0.5.0 (2021-08-13)
 
 ### Feat
