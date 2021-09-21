@@ -15,3 +15,4 @@ black
 flake8
 mkdocs-material
 mkdocstrings
+pytkdocs
