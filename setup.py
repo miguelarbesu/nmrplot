@@ -42,8 +42,8 @@ setup(
         "matplotlib>3",
         "pandas>1",
         "scikit-learn",
-        "skimage",
+        "scikit-image",
         "nmrglue",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
 )
