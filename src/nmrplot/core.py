@@ -49,10 +49,13 @@ def load_bruker(expno_path, pdata=1):
 class Spectrum:
     """An object containing a spectrum and its parameters"""
 
-    def __init__(self, expno_path, pdata=1, normalize=True):
+    def __init__(
+        self, expno_path, pdata=1, normalize=True, sign="positive"
+    ):
         self.dic, self.data = load_bruker(expno_path, pdata)
         self.udic = ng.bruker.guess_udic(self.dic, self.data)
         self.ndim = self.data.ndim
+        self.sign = sign
         self.normalized = False
         # go through each dimension inversely to keep the right order.
         # last dimension is the directly detected, goes to X axis
@@ -66,6 +69,11 @@ class Spectrum:
         if normalize is True:
             self.normalize_data()
         self.calc_signal_to_noise()
+        self.calc_threshold()
+        # Empty placeholder for plotting parameters
+        # self.clevs = ""
+        # self.threshold = ""
+        # 
 
     def get_ppm_ranges(self):
         """Return the ppm ranges of the spectrum"""
@@ -112,7 +120,7 @@ class Spectrum:
         self.snr = self.signal / self.noise
         return self.snr, self.signal, self.noise
 
-    def calc_threshold(self, sign, signal_fraction=0.01):
+    def calc_threshold(self, signal_fraction=0.01):
         """Return the threshold for the spectrum contour level based on a given
         signal fraction
 
@@ -126,23 +134,23 @@ class Spectrum:
         Returns:
             self.threshold: How many times the noise level is the lower contour above the baseline.
         """
-        if sign == "both":
+        if self.sign == "both":
             # A good guess is the lowest contour should be 1/100 of the signal
             # Calculate the corresponding threshold
             self.threshold = (self.signal * signal_fraction) / self.noise
-        elif sign == "positive":
+        elif self.sign == "positive":
             # Same but on the positive side
             self.threshold = (self.data.max() * signal_fraction) / self.noise
-        elif sign == "negative":
+        elif self.sign == "negative":
             # Same but on the negative side
             self.threshold = abs(self.data.min() * signal_fraction) / self.noise
         else:
             raise ValueError(
-                f"Unknown sign: {sign}\nPlease choose a valid sign: negative, positive or both"
+                f"Unknown sign: {self.sign}\nPlease choose a valid sign: negative, positive or both"
             )
         return self.threshold
 
-    def calc_clevs(self, threshold, nlevs, factor, sign):
+    def calc_clevs(self, nlevs=42, factor=1.1):
         """Calculate the contour levels for the spectrum given a series of parameters.
 
         Args:
@@ -154,32 +162,28 @@ class Spectrum:
         Raises:
             ValueError: If no correct sign is given, an error message is raised.
         """
-        if threshold is None:
-            self.calc_threshold(sign)
-        else:
-            self.threshold = threshold
         # calculate starting contour level from threshold
         start_clev = self.baseline + self.threshold * self.noise
-        if sign == "both":
+        if self.sign == "both":
             positive_clevs = start_clev * factor ** np.arange(nlevs)
             negative_clevs = -np.flip(positive_clevs)
             self.clevs = np.concatenate((negative_clevs, positive_clevs))
             print(
                 f"Highest negative/lowest positive contour levels are at {self.threshold:.1f}*noise below/above the baseline"
             )
-        elif sign == "positive":
+        elif self.sign == "positive":
             self.clevs = start_clev * factor ** np.arange(nlevs)
             print(
                 f"Lowest positive contour level is at {self.threshold:.1f}*noise above the baseline"
             )
-        elif sign == "negative":
+        elif self.sign == "negative":
             self.clevs = -np.flip(start_clev * factor ** np.arange(nlevs))
             print(
                 f"Highest negative contour level is at {self.threshold:.1f}*noise below the baseline"
             )
         else:
             raise ValueError(
-                f"Unknown sign: {sign}\nPlease choose a valid sign: negative, positive or both"
+                f"Unknown sign: {self.sign}\nPlease choose a valid sign: negative, positive or both"
             )
 
     def plot_histogram(self):
@@ -188,14 +192,15 @@ class Spectrum:
         plt.hist(bins, counts)
         plt.show()
 
-    def plot_spectrum(
-        self, threshold, nlevs=42, factor=1.1, cmap="viridis", sign="positive"
-    ):
+    def plot_spectrum(self, xlims="", ylims="", nlevs=42, factor=1.1, linewidth=1.0, cmap="viridis"):
         """Plot the spectrum.
         Args:
            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise.
+           xlims(tuple, optional): x axis ppm limit. Keep in mind that ppm decrease left to right.
+           ylims(tuple, optional): y axis ppm limit. Keep in mind that ppm decrease left to right.
            nlevs (int, optional): Number of contour levels.
-           factor (float, optional): exponential increment between contours.
+           factor (float, optional): Exponential increment between contours.
+           linewidth (float, optional). Contour level linewidth
            cmap (str, optional): Colormap to be used. Options are: "viridis, "red", "blue", "green", "purple", "orange", "grey", "light_red", "light_blue". Only with sign="both":"coolwarm".
            sign (str, optional): Sign of the intensities to draw. Defaults to 'positive'.
         """
@@ -205,20 +210,23 @@ class Spectrum:
             ppm_scale = np.linspace(
                 self.ppm_ranges[0], self.ppm_ranges[1], self.data.size
             )
-            ax.plot(ppm_scale, self.data, linewidth=1.0)
-            ax.set_xlim(*self.ppm_ranges)
+            ax.plot(ppm_scale, self.data, linewidth=linewidth)
+            if xlims is False:
+                ax.set_xlim(xlims)
+            else:
+                ax.set_xlim(*self.ppm_ranges)
             ax.set_xlabel(f"{self.label[0]} ppm")
             ax.set_ylabel("Intensity (A.U.)")
             plt.show()
 
         elif self.ndim == 2:
-            self.calc_clevs(threshold, nlevs, factor, sign)
+            self.calc_clevs(nlevs, factor)
             fig, ax = plt.subplots()
             # Set the limits of the color map to the calculated contour levels
             vmin = self.clevs.min()
             vmax = self.clevs.max()
             # Colormaps need to be lognormalized to fit the contour levels
-            if sign == "both":
+            if self.sign == "both":
                 cmap = cmapdict["coolwarm"]
                 # We have positive and negative contours
                 norm = SymLogNorm(
@@ -227,13 +235,13 @@ class Spectrum:
                 data = norm(self.data)
                 clevs = norm(self.clevs)
                 print(f"Plotting {nlevs} negative and {nlevs} positive contour levels")
-            elif sign == "positive":
+            elif self.sign == "positive":
                 norm = LogNorm(vmin=vmin, vmax=vmax)
                 cmap = cmapdict[cmap]
                 data = norm(self.data)
                 clevs = norm(self.clevs)
                 print(f"Plotting {nlevs} positive contour levels")
-            elif sign == "negative":
+            elif self.sign == "negative":
                 # Because contours are negative we need to make it positive to calculate
                 # the norm, and apply it flipped to the data and clevs
                 # FIXME: It raises a RuntimeWarning, but it works.
@@ -246,16 +254,20 @@ class Spectrum:
             else:
                 pass
             ax.contour(
-                data,
-                clevs,
-                extent=self.ppm_ranges,
-                linewidths=0.75,
-                cmap=cmap,
+                data, clevs, extent=self.ppm_ranges, linewidths=linewidth, cmap=cmap,
             )
-            ax.set_xlim(*self.ppm_ranges[:2])
-            ax.set_ylim(*self.ppm_ranges[2:])
+            if xlims == "":
+                ax.set_xlim(*self.ppm_ranges[:2])
+            else:
+                ax.set_xlim(xlims)
+            if ylims == "":
+                ax.set_ylim(*self.ppm_ranges[2:])
+            else:
+                ax.set_ylim(ylims)
             ax.set_xlabel(f"{self.label[0]} ppm")
             ax.set_ylabel(f"{self.label[1]} ppm")
             plt.show()
         else:
             print("The spectrum is not 1D or 2D")
+
+        return fig, ax

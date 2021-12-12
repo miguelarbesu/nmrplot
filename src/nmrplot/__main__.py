@@ -47,10 +47,11 @@ from nmrplot import core
 def main(path, pdata, threshold, cmap, nlevs, sign, factor):
     """Plot a 1D or 2D Bruker NMR spectrum in a given path"""
     spectrum = core.Spectrum(path, pdata)
+    spectrum.sign = sign
+    if threshold:
+        spectrum.threshold = threshold
     print(f"Loaded {spectrum.ndim}D spectrum {spectrum.label}")
-    spectrum.plot_spectrum(
-        threshold=threshold, cmap=cmap, nlevs=nlevs, sign=sign, factor=factor
-    )
+    spectrum.plot_spectrum(cmap=cmap, nlevs=nlevs, factor=factor)
 
 
 if __name__ == "__main__":
