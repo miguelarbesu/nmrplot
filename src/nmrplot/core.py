@@ -49,9 +49,7 @@ def load_bruker(expno_path, pdata=1):
 class Spectrum:
     """An object containing a spectrum and its parameters"""
 
-    def __init__(
-        self, expno_path, pdata=1, normalize=True, sign="positive"
-    ):
+    def __init__(self, expno_path, pdata=1, normalize=True, sign="positive"):
         self.dic, self.data = load_bruker(expno_path, pdata)
         self.udic = ng.bruker.guess_udic(self.dic, self.data)
         self.ndim = self.data.ndim
@@ -64,16 +62,14 @@ class Spectrum:
         self.obs = tuple(self.udic[i]["obs"] for i in reversed(range(self.ndim)))
         self.freq = tuple(self.udic[i]["freq"] for i in reversed(range(self.ndim)))
         self.get_ppm_ranges()
+        self.get_points()
         self.calc_baseline()
         # data is normalized by default
         if normalize is True:
             self.normalize_data()
         self.calc_signal_to_noise()
         self.calc_threshold()
-        # Empty placeholder for plotting parameters
-        # self.clevs = ""
-        # self.threshold = ""
-        # 
+        self.calc_ppm_meshgrid()
 
     def get_ppm_ranges(self):
         """Return the ppm ranges of the spectrum"""
@@ -85,6 +81,30 @@ class Spectrum:
         # flatten the range list
         self.ppm_ranges = [item for sublist in self.ppm_ranges for item in sublist]
         return self.ppm_ranges
+
+    def get_points(self):
+        """Return the number of points of the spectrum in each dimension"""
+        # order is reversed to be consistent with the ppm_ranges
+        # reverse data.shape to get the right order
+        self.points = tuple(self.data.shape[i] for i in reversed(range(self.ndim)))
+        return self.points
+
+    def calc_ppm_meshgrid(self):
+        """Return the ppm grid of the spectrum for plotting"""
+
+        if self.ndim == 1:
+            self.ppm_meshgrid = np.linspace(
+                self.ppm_ranges[0], self.ppm_ranges[1], self.points[0]
+            )
+
+        elif self.ndim > 1:
+            ppm_ranges = [tuple(i) for i in np.array_split(self.ppm_ranges, 2)]
+            ppm_arrays = []
+            for points, ranges in zip(self.points, ppm_ranges):
+                ppm_arrays.append(np.linspace(ranges[0], ranges[1], points))
+            self.ppm_meshgrid = np.meshgrid(*ppm_arrays)
+
+        return self.ppm_meshgrid
 
     def calc_histogram(self):
         """Return the histogram of the spectrum"""
@@ -192,7 +212,9 @@ class Spectrum:
         plt.hist(bins, counts)
         plt.show()
 
-    def plot_spectrum(self, xlims="", ylims="", nlevs=42, factor=1.1, linewidth=1.0, cmap="viridis"):
+    def plot_spectrum(
+        self, xlims="", ylims="", nlevs=42, factor=1.1, linewidth=1.0, cmap="viridis"
+    ):
         """Plot the spectrum.
         Args:
            threshold (float, optional): Lowest contour drawn as a multiple of the spectral noise.
@@ -207,10 +229,8 @@ class Spectrum:
 
         if self.ndim == 1:
             fig, ax = plt.subplots()
-            ppm_scale = np.linspace(
-                self.ppm_ranges[0], self.ppm_ranges[1], self.data.size
-            )
-            ax.plot(ppm_scale, self.data, linewidth=linewidth)
+
+            ax.plot(self.ppm_meshgrid, self.data, linewidth=linewidth)
             if xlims is False:
                 ax.set_xlim(xlims)
             else:
@@ -254,7 +274,12 @@ class Spectrum:
             else:
                 pass
             ax.contour(
-                data, clevs, extent=self.ppm_ranges, linewidths=linewidth, cmap=cmap,
+                *self.ppm_meshgrid,
+                data,
+                clevs,
+                extent=self.ppm_ranges,
+                linewidths=linewidth,
+                cmap=cmap,
             )
             if xlims == "":
                 ax.set_xlim(*self.ppm_ranges[:2])
