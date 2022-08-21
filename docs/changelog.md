@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2 (2022-08-21)
+
+### Refactor
+
+- **Spectrum**: create np.meshgrids from ppm ranges and point numbers
+- **Spectrum**: rename plotting-related parameters as class attributes and update plotting method
+
 ## 0.5.1 (2021-08-16)
 
 ### Refactor
