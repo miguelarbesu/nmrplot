@@ -213,7 +213,7 @@ class Spectrum:
         plt.show()
 
     def plot_spectrum(
-        self, xlims="", ylims="", nlevs=42, factor=1.1, linewidth=1.0, cmap="viridis"
+        self, xlims="", ylims="", nlevs=42, factor=1.1, linewidth=1.0, cmap="viridis", existing_ax=None
     ):
         """Plot the spectrum.
         Args:
@@ -226,10 +226,9 @@ class Spectrum:
            cmap (str, optional): Colormap to be used. Options are: "viridis, "red", "blue", "green", "purple", "orange", "grey", "light_red", "light_blue". Only with sign="both":"coolwarm".
            sign (str, optional): Sign of the intensities to draw. Defaults to 'positive'.
         """
-
-        if self.ndim == 1:
+        if not existing_ax:
             fig, ax = plt.subplots()
-
+        if self.ndim == 1:
             ax.plot(self.ppm_meshgrid, self.data, linewidth=linewidth)
             if xlims is False:
                 ax.set_xlim(xlims)
@@ -241,7 +240,7 @@ class Spectrum:
 
         elif self.ndim == 2:
             self.calc_clevs(nlevs, factor)
-            fig, ax = plt.subplots()
+            
             # Set the limits of the color map to the calculated contour levels
             vmin = self.clevs.min()
             vmax = self.clevs.max()
